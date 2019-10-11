@@ -4,8 +4,8 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego/plugins/cors"
-	"github.com/sinksmell/LanBlog/models"
-	_ "github.com/sinksmell/LanBlog/routers"
+	"github.com/sinksmell/lanblog/models"
+	_ "github.com/sinksmell/lanblog/routers"
 )
 
 func init() {

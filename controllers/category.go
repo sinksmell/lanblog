@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/astaxie/beego"
-	"github.com/sinksmell/LanBlog/models"
+	"github.com/sinksmell/lanblog/models"
 	"strconv"
 	"strings"
 )

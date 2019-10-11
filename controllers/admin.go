@@ -3,7 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"github.com/astaxie/beego"
-	"github.com/sinksmell/LanBlog/models"
+	"github.com/sinksmell/lanblog/models"
 )
 
 type AdminController struct {

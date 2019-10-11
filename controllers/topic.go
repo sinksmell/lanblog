@@ -3,7 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/sinksmell/LanBlog/models"
+	"github.com/sinksmell/lanblog/models"
 	"strconv"
 	"strings"
 	"github.com/astaxie/beego"
