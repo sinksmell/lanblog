@@ -4,5 +4,4 @@ go:
 - "1.11"
 sudo: required
 
-script:
-
+script: make build-linux

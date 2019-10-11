@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lanblog-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lanblog-gateway
+  template:
+    metadata:
+      labels:
+        app: lanblog-gateway
+    spec:
+      containers:
+        - name: lanblog-gateway
+          image: destory/gateway:v1.0.0
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              cpu: 300m
+              memory: 300Mi
+            requests:
+              cpu: 200m
+              memory: 200Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: lanblog-gateway
+  ports:
+    - name: blog
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: cms
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
