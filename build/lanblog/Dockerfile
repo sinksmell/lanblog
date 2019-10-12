@@ -1,4 +1,4 @@
-FROM cargo.caicloud.xyz/library/debian:stretch
+FROM debian:stretch
 
 LABEL maintainer="sinksmell <cxxjcs@gmail.com>"
 
