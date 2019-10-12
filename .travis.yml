@@ -1,7 +1,7 @@
-language: go
+# language: go
 
-go:
-- "1.11"
+# go:
+# - "1.11"
 
 
-script: make build-linux
+# script: make build-linux

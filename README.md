@@ -14,7 +14,9 @@
 > * 其他相关开源项目
 
 **技术栈**
-> Vue.js + axios(ajax) +Beego Restful api + Mysql + Nginx
+> Vue.js + axios(ajax) + Beego Restful api + Mysql + Nginx
+> 目前已经进行初步容器化，可在 k8s 集群上快速部署
+![Snip20191012_5.png](https://i.loli.net/2019/10/12/mbTAXDNJ7kFdYx4.png)
 
 ### **项目介绍**
 
@@ -43,182 +45,216 @@
 > 以Ubuntu为例
 
 ### 简单部署
-> 下载对应的 压缩包 解压运行 具体步骤待补充...
-> 
 
-### 手动编译安装
-**Step1 安装mysql**
+> * 首先需要一个可以工作的K8S集群
+> * Mysql 默认密码是 sinksmell
+> * 后台管理账号和密码均是 sinksmell
+> * 配置文件在 conf/app.conf 里面可以修改登录密码，但是要重新编译镜像，在yaml文件中替换镜像版本
+
 
 ```shell
-sudo apt update
-sudo apt install mysql-server mysql-common mysql-client
-```
-安装完成后创建 myblog数据库或者其他名称,与项目目录conf下app.conf中mysqldb保持一致即可
-
-``` shell
-	mysql -u root -p
-	// 进入mysql后创建数据库
+# 1. 克隆项目
+	cd /home
+	https://github.com/sinksmell/lanblog.git
+# 2. 进入项目根目录
+	cd /home/lanblog
 	
-	create database myblog;
-	
-	//创建完成后退出
-	
-	exit;
-	
-``` 
-
-**Step2 安装Nginx**
-
-``` shell
- sudo apt install nginx
-```
-
-**Step 3 安装编译环境**
-> 若提示没有权限,请以root身份运行
-
-* 下载并安装go语言,配置环境变量
-
-
-``` shell
-cd /usr/local
-wget https://studygolang.com/dl/golang/go1.12.linux-amd64.tar.gz
-
-tar zxvf  go1.12.linux-amd64.tar.gz
-
-echo 'export GOROOT=/usr/local/go' >> ~/.bashrc 
-
-echo 'export GOPATH=/var/www' >> ~/.bashrc 
-echo 'export PATH=$PATH:$GOROOT/bin:$GOPATH/bin' >> ~/.bashrc 
-
-source ~/.bashrc
-	
-``` 
-
-* 查看是否安装成功
-> 输入go version查看go版本 输入go 查看命令提示
-
-
-	go version
-	go 
-
-如果出现以下提示,则安装成功
-
-![](https://i.loli.net/2019/03/03/5c7b8034bbdc4.png)
-
-* 克隆项目到本地 
-
-``` shell
-
-cd /var/www
-
-mkdir src
-
-cd src
-
-git clone https://github.com/sinksmell/LanBlog.git
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home# cd lanblog/
 
 ```
 
-* 安装依赖
 
-``` 
 
-go get github.com/astaxie/beego
+#### 1. 部署mysql服务
 
-go get  github.com/beego/bee
+```shell
 
-go get github.com/dgrijalva/jwt-go
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# ls
+build  conf  controllers  front  go.mod  go.sum  LICENSE  main.go  makefile  models  README.md  routers  sql  swagger  vendor
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl apply -f build/mysql/lanblog-mysql.yaml
+service/lanblog-mysql created
+persistentvolumeclaim/mysql-pv-claim created
+deployment.apps/lanblog-mysql created
+persistentvolume/local-pv-1 created
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl get svc
+NAME            TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+kubernetes      ClusterIP   10.152.183.1   <none>        443/TCP    24h
+lanblog-mysql   ClusterIP   None           <none>        3306/TCP   53s
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl get po
+NAME                            READY   STATUS    RESTARTS   AGE
+lanblog-mysql-bfb7c765f-hkd5n   1/1     Running   0          2m19s
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog#
 
-go get github.com/go-sql-driver/mysql
+# 进入Mysql pod 内创建数据库 myblog
 
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl get po
+NAME                               READY   STATUS    RESTARTS   AGE
+lanblog-backend-6d86579456-zqvtg   1/1     Running   0          3m24s
+lanblog-mysql-bfb7c765f-hkd5n      1/1     Running   0          9m3s
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl exec -it lanblog-mysql-bfb7c765f-hkd5n /bin/bash
+root@lanblog-mysql-bfb7c765f-hkd5n:/# mysql -h lanblog-mysql -u root -p
+Enter password:
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 66
+Server version: 8.0.17 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> CREATE DATABASE `myblog` CHARACTER SET utf8 COLLATE utf8_general_ci;
+ERROR 1007 (HY000): Can't create database 'myblog'; database exists
+mysql>
+
+# exit 退出容器
 
 ```
 
-**Step 3 安装编译环境**
+**MySQL服务成功部署**
 
-* 修改Nginx配置文件
 
-> 后台管理 blogCMS.conf
+#### 2. 部署backend
 
-``` conf
-server {
-listen 8088;
-server_name localhost;
-charset utf-8;
-access_log /var/www/blogCMS.log  main;
-
-location / {
-  root /var/www/src/LanBlog/views;
-  index index.html;
-}
-
-location ~ /(script|image|img|js|fonts|css)/ {
-  expires 1d;
-  root /var/www/src/LanBlog/static/blogCMS ;
-}
-    location /api {
-            proxy_pass   http://localhost:8088/v1;
-            add_header Access-Control-Allow-Methods *;
-            add_header Access-Control-Max-Age 3600;
-            add_header Access-Control-Allow-Credentials true;
-            add_header Access-Control-Allow-Origin $http_origin;
-            add_header Access-Control-Allow-Headers $http_access_control_request_headers;
-
-            if ($request_method = OPTIONS ) {
-                return 200;
-            }
-        }
-
-}
+```shell
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# ls
+build  conf  controllers  front  go.mod  go.sum  LICENSE  main.go  makefile  models  README.md  routers  sql  swagger  vendor
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl apply -f build/lanblog/lanblog.yaml
+deployment.apps/lanblog-backend created
+service/lanblog-backend created
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl get po
+NAME                               READY   STATUS    RESTARTS   AGE
+lanblog-backend-6d86579456-zqvtg   1/1     Running   0          10s
+lanblog-mysql-bfb7c765f-hkd5n      1/1     Running   0          5m49s
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog#
+# 测试一下 能否正常访问
+# ps 在node上要通过clusterIp来访问service
+# 在pod里可以直接通过 service name
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# curl -v http://10.152.183.204:8088/v1/category/list
+*   Trying 10.152.183.204...
+* TCP_NODELAY set
+* Connected to 10.152.183.204 (10.152.183.204) port 8088 (#0)
+> GET /v1/category/list HTTP/1.1
+> Host: 10.152.183.204:8088
+> User-Agent: curl/7.58.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Access-Control-Allow-Credentials: true
+< Access-Control-Allow-Headers: Origin,Authorization,Access-Control-Allow-Origin,Access-Control-Allow-Headers,Content-Type
+< Access-Control-Allow-Methods: GET,POST,OPTIONS
+< Access-Control-Allow-Origin: *
+< Access-Control-Expose-Headers: Content-Length,Access-Control-Allow-Origin,Access-Control-Allow-Headers,Content-Type
+< Content-Length: 4
+< Content-Type: application/json; charset=utf-8
+< Server: beegoServer:1.12.0
+< Date: Sat, 12 Oct 2019 06:52:47 GMT
+<
+* Connection #0 to host 10.152.183.204 left intact
+# 正常访问
 ```
 
-> blog.conf
 
-``` conf
+
+####  3. 部署gateway
+
+```shell
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# ls
+build  conf  controllers  front  go.mod  go.sum  LICENSE  main.go  makefile  models  README.md  routers  sql  swagger  vendor
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl apply -f build/gateway/lanblog-gateway.yaml
+deployment.apps/lanblog-gateway created
+service/gateway created
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl get svc
+NAME              TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)           AGE
+gateway           ClusterIP   10.152.183.118   <none>        80/TCP,9090/TCP   7s
+kubernetes        ClusterIP   10.152.183.1     <none>        443/TCP           24h
+lanblog-backend   ClusterIP   10.152.183.204   <none>        8088/TCP          15m
+lanblog-mysql     ClusterIP   None             <none>        3306/TCP          21m
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl get po
+NAME                               READY   STATUS    RESTARTS   AGE
+lanblog-backend-6d86579456-zqvtg   1/1     Running   0          15m
+lanblog-gateway-bc89c665c-k4lfr    1/1     Running   0          19s
+lanblog-mysql-bfb7c765f-hkd5n      1/1     Running   0          21m
+
+
+# 判断gateway是否工作正常
+root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# curl  -v http://10.152.183.118:80
+* Rebuilt URL to: http://10.152.183.118:80/
+*   Trying 10.152.183.118...
+* TCP_NODELAY set
+* Connected to 10.152.183.118 (10.152.183.118) port 80 (#0)
+> GET / HTTP/1.1
+> Host: 10.152.183.118
+> User-Agent: curl/7.58.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Server: nginx/1.17.4
+< Date: Sat, 12 Oct 2019 07:05:58 GMT
+< Content-Type: text/html
+< Content-Length: 22270
+< Last-Modified: Sat, 12 Oct 2019 06:34:31 GMT
+< Connection: keep-alive
+
+```
+
+
+
+#### 4. 向外暴露服务
+
+> * 借助nginx向外暴露服务，需要事先安装 nginx 和 80，9090 两个端口
+>
+> * 安装的Nginx有一个默认的Server 占用了 80 端口 手动删除
+
+
+
+```shell
+# 删除默认server
+rm /etc/nginx/sites-enabled/default
+
+# 拷贝lanblog.conf到 /etc/nginx/conf.d
+ cp front/lanblog.conf /etc/nginx/conf.d/lanblog.conf
+# 查看gateway服务的clusterIP 本例中是 10.152.183.118
+kubectl  get svc
+# 修改 /etc/nginx/conf.d/lanblog.conf 中的 proxy_pass 将 ip 替换为 上述ip
+# 以下是修改后的结果
 server {
     listen 80;
     server_name localhost;
-    access_log /var/www/blog.log  main;
+    # access_log /root/blog.log  main;
 
     location / {
-        root /var/www/src/LanBlog/views ;
-        index home.html ;
+       proxy_pass http://10.152.183.118:80/ ;
     }
-
-    location  ~ /(css|js|fonts|img|node_modules)/ {
-       # access_log off;
-        expires 1d;
-        root /var/www/src/LanBlog/static/blog ;
-    }
-
-    location /api {
-            proxy_pass   http://localhost:8088/v1;
-            add_header Access-Control-Allow-Methods *;
-            add_header Access-Control-Max-Age 3600;
-            add_header Access-Control-Allow-Credentials true;
-            add_header Access-Control-Allow-Origin $http_origin;
-            add_header Access-Control-Allow-Headers $http_access_control_request_headers;
-
-            if ($request_method = OPTIONS ) {
-                return 200;
-            }
-        }
 }
 
+server {
+    listen 9090;
+    server_name localhost;
+    # access_log /root/blog.log  main;
+
+    location / {
+       proxy_pass http://10.152.183.118:9090/ ;
+    }
+
+}
+
+# 重新加载配置文件
+nginx -s reload
 ```
 
-* 运行项目 
 
-``` 
-sudo  service nginx start
 
-cd /var/www/src/LanBlog
+#### 5. 访问博客
 
-bee run 
-
+```shell
+1. 输入IP访问博客界面
+2. 输入IP:9090访问后台管理界面
 ```
+![](https://i.loli.net/2019/10/12/a31BMFekHWitImU.png)
 
-* 运行效果图
-![](https://i.loli.net/2019/03/03/5c7b81c7e4722.png)
+![](https://i.loli.net/2019/10/12/qWbczKugC67kAyE.png)
 
-* 访问80端口
