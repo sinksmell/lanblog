@@ -55,11 +55,9 @@
 ```shell
 # 1. 克隆项目
 	cd /home
-	https://github.com/sinksmell/lanblog.git
+	git clone   https://github.com/sinksmell/lanblog.git
 # 2. 进入项目根目录
 	cd /home/lanblog
-	
-root@iZuf6i0qzccaf7xbj7ugtxZ:/home# cd lanblog/
 
 ```
 
@@ -92,7 +90,7 @@ NAME                               READY   STATUS    RESTARTS   AGE
 lanblog-backend-6d86579456-zqvtg   1/1     Running   0          3m24s
 lanblog-mysql-bfb7c765f-hkd5n      1/1     Running   0          9m3s
 root@iZuf6i0qzccaf7xbj7ugtxZ:/home/lanblog# kubectl exec -it lanblog-mysql-bfb7c765f-hkd5n /bin/bash
-root@lanblog-mysql-bfb7c765f-hkd5n:/# mysql -h lanblog-mysql -u root -p
+root@lanblog-mysql-bfb7c765f-hkd5n:/# mysql -u root -p
 Enter password:
 Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 66
@@ -107,7 +105,6 @@ owners.
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 
 mysql> CREATE DATABASE `myblog` CHARACTER SET utf8 COLLATE utf8_general_ci;
-ERROR 1007 (HY000): Can't create database 'myblog'; database exists
 mysql>
 
 # exit 退出容器
