@@ -16,3 +16,4 @@ bin/
 .vscode
 .idea
 vendor/
+/server/lanblog

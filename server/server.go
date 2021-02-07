@@ -7,9 +7,13 @@ import (
 	"os"
 	"github.com/sinksmell/lanblog/db"
 	"github.com/sinksmell/lanblog/web"
+	"github.com/sinksmell/lanblog/ent"
 )
 
 func main() {
+
+	_ = ent.NewClient()
+
 	d, err := sql.Open("mysql", dataSource())
 	if err != nil {
 		log.Fatal(err)
